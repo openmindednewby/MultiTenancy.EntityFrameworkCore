@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using OnlineMenu.DomainCore.Interfaces;
+using DomainCore.Interfaces;
 
 namespace MultiTenancy.Models;
 
