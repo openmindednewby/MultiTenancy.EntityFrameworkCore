@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using OnlineMenu.MultiTenancy.Abstractions;
-using OnlineMenu.Security.Claims;
+using Security.Claims.Claims;
 
 namespace OnlineMenu.MultiTenancy.Services;
 
