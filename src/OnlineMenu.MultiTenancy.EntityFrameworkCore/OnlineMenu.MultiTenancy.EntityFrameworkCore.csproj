@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>OnlineMenu.MultiTenancy</RootNamespace>
+    <PackageId>OnlineMenu.MultiTenancy.EntityFrameworkCore</PackageId>
+    <Description>Multi-tenant data isolation for Entity Framework Core. Provides tenant context services, base tenant entity, and query filtering for SaaS applications.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OnlineMenu.DomainCore\OnlineMenu.DomainCore.csproj" />
+    <ProjectReference Include="..\OnlineMenu.Security\OnlineMenu.Security.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
