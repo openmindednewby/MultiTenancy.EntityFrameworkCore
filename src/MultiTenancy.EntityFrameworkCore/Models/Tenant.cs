@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using OnlineMenu.DomainCore.Interfaces;
 
-namespace OnlineMenu.MultiTenancy.Models;
+namespace MultiTenancy.Models;
 
 /// <summary>
 /// Represents a tenant in a multi-tenant application.

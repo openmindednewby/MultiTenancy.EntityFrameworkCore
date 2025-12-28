@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Http;
-using OnlineMenu.MultiTenancy.Abstractions;
+using MultiTenancy.Abstractions;
 using Security.Claims.Claims;
 
-namespace OnlineMenu.MultiTenancy.Services;
+namespace MultiTenancy.Services;
 
 /// <summary>
 /// Implementation of <see cref="ICurrentTenantService"/> that extracts tenant information

@@ -1,4 +1,4 @@
-namespace OnlineMenu.MultiTenancy.Abstractions;
+namespace MultiTenancy.Abstractions;
 
 /// <summary>
 /// Service for accessing the current tenant context from the HTTP request.

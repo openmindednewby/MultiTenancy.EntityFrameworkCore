@@ -1,4 +1,4 @@
-namespace OnlineMenu.MultiTenancy.Models;
+namespace MultiTenancy.Models;
 
 /// <summary>
 /// Represents the status of a tenant in the system.

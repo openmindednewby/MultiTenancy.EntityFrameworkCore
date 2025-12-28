@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using OnlineMenu.MultiTenancy.Abstractions;
-using OnlineMenu.MultiTenancy.Services;
+using MultiTenancy.Abstractions;
+using MultiTenancy.Services;
 
-namespace OnlineMenu.MultiTenancy.Extensions;
+namespace MultiTenancy.Extensions;
 
 /// <summary>
 /// Extension methods for registering multi-tenancy services.
