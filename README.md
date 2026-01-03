@@ -29,11 +29,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Related Packages
 
-- [OnlineMenu.DomainCore](https://www.nuget.org/packages/OnlineMenu.DomainCore)
-- [OnlineMenu.Security](https://www.nuget.org/packages/OnlineMenu.Security)
-- [MultiTenancy.EntityFrameworkCore](https://www.nuget.org/packages/MultiTenancy.EntityFrameworkCore)
+- [DomainCore](https://www.nuget.org/packages/DomainCore)
+- [Security.Claims](https://www.nuget.org/packages/Security.Claims)
 
 ## Support
 
 - Issues: [GitHub Issues](https://github.com/yourusername/MultiTenancy.EntityFrameworkCore/issues)
 - Discussions: [GitHub Discussions](https://github.com/yourusername/MultiTenancy.EntityFrameworkCore/discussions)
+
+## How to Publish
+
+```bash
+cd C:\desktopContents\projects\SaaS\NuGetPackages\MultiTenancy.EntityFrameworkCore
+.\publish.ps1 -ApiKey XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX -Bump major
+.\publish.ps1 -ApiKey XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX -Bump minor
+```
