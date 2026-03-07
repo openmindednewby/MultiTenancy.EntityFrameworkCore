@@ -13,7 +13,7 @@ This guide explains how to build, pack, and publish this NuGet package.
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/MultiTenancy.EntityFrameworkCore.git
+git clone https://github.com/openmindednewby/MultiTenancy.EntityFrameworkCore.git
 cd MultiTenancy.EntityFrameworkCore
 ```
 
@@ -276,8 +276,8 @@ Make sure symbols are enabled in `Directory.Build.props`:
 
 ## 💬 Support
 
-- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/MultiTenancy.EntityFrameworkCore/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/MultiTenancy.EntityFrameworkCore/discussions)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/openmindednewby/MultiTenancy.EntityFrameworkCore/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/openmindednewby/MultiTenancy.EntityFrameworkCore/discussions)
 - 📦 **NuGet**: [NuGet Package Page](https://www.nuget.org/packages/MultiTenancy.EntityFrameworkCore)
 
 ---
