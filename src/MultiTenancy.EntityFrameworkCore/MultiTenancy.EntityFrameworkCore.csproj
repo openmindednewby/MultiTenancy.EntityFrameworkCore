@@ -12,6 +12,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      Provider-agnostic on purpose: the base EF Core package only, never a provider. Questioner
+      targets SQLite + SqlServer + Npgsql from one model, so a provider dependency here would leak
+      into all three.
+
+      Pinned to 9.0.6, NOT 10.x: every consumer is on EF Core 9.0.6 today (despite net10.0 TFMs), and
+      NuGet resolves to the highest requested version - referencing 10.x here would silently drag six
+      services across an EF major.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
   </ItemGroup>
