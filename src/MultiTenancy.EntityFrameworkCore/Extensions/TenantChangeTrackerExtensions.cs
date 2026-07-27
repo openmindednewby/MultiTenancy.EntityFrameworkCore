@@ -69,4 +69,55 @@ public static class TenantChangeTrackerExtensions
       }
     }
   }
+
+  /// <summary>
+  /// The <see cref="ITenantOwned"/> counterpart of
+  /// <see cref="StampTenancy(ChangeTracker, ICurrentTenantService)"/>. Stamps the ambient tenant onto
+  /// NEW <see cref="ITenantOwned"/> rows whose <see cref="ITenantOwned.TenantId"/> is still
+  /// <see cref="Guid.Empty"/>. Call from <c>SaveChangesAsync</c>, BEFORE <c>base.SaveChangesAsync</c>.
+  /// </summary>
+  /// <param name="changeTracker">The context's change tracker.</param>
+  /// <param name="currentTenantService">The ambient tenant service.</param>
+  /// <remarks>
+  /// <para>
+  /// Same guarantees as the <c>BaseTenantEntity</c> path: <b>purely additive</b> (only fills
+  /// <see cref="Guid.Empty"/>, never overwrites a TenantId already set), a <b>no-op</b> when there is no
+  /// ambient tenant, and it screens an ambient <see cref="Guid.Empty"/> so it can never stamp the exact
+  /// value it exists to prevent.
+  /// </para>
+  /// <para>
+  /// It writes through the change-tracker's <c>PropertyEntry.CurrentValue</c>
+  /// rather than a setter, because <see cref="ITenantOwned"/> guarantees only a getter — this lets the
+  /// concrete entity keep a public setter, a private setter or a backing field. Note the asymmetry with
+  /// the query filter: reading the ambient service as a parameter is safe HERE because this runs at
+  /// SaveChanges time, not model-creation time.
+  /// </para>
+  /// <para>
+  /// Unlike the <c>BaseTenantEntity</c> path this does NOT stamp a UserId: <see cref="ITenantOwned"/>
+  /// deliberately models tenant ownership only.
+  /// </para>
+  /// </remarks>
+  public static void StampTenantOwned(
+      this ChangeTracker changeTracker,
+      ICurrentTenantService currentTenantService)
+  {
+    ArgumentNullException.ThrowIfNull(changeTracker);
+    ArgumentNullException.ThrowIfNull(currentTenantService);
+
+    if (currentTenantService.TenantId is not Guid tenantId || tenantId == Guid.Empty)
+    {
+      return;
+    }
+
+    var newRows = changeTracker.Entries<ITenantOwned>()
+        .Where(e => e.State == EntityState.Added);
+
+    foreach (var entry in newRows)
+    {
+      if (entry.Entity.TenantId == Guid.Empty)
+      {
+        entry.Property(nameof(ITenantOwned.TenantId)).CurrentValue = tenantId;
+      }
+    }
+  }
 }

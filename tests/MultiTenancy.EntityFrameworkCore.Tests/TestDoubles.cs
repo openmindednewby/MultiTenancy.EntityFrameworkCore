@@ -106,3 +106,88 @@ public abstract class TestDbContextBase : DbContext, ITenantScopedDbContext
     return await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
   }
 }
+
+// -------------------------------------------------------------------------------------------------
+// ITenantOwned doubles: the AMLService shape — a raw Guid PK and a plain settable TenantId, adopting
+// tenancy through the interface INSTEAD of BaseTenantEntity.
+// -------------------------------------------------------------------------------------------------
+
+/// <summary>A tenant-scoped row that keys on <see cref="ITenantOwned"/>, not <c>BaseTenantEntity</c>.</summary>
+public sealed class Gadget : ITenantOwned
+{
+  public Guid Id { get; set; }
+
+  public Guid TenantId { get; set; }
+
+  public string Name { get; set; } = string.Empty;
+}
+
+/// <summary>A NON-tenant row in the owned model, to prove the filter touches only ITenantOwned types.</summary>
+public sealed class OwnedGlobalSetting
+{
+  public Guid Id { get; set; }
+
+  public string Key { get; set; } = string.Empty;
+}
+
+/// <summary>The fail-open owned context.</summary>
+public sealed class FailOpenOwnedDbContext : OwnedTestDbContextBase
+{
+  public FailOpenOwnedDbContext(DbContextOptions options, ICurrentTenantService tenantService)
+      : base(options, tenantService)
+  {
+  }
+
+  protected override TenantFilterMode Mode => TenantFilterMode.FailOpen;
+}
+
+/// <summary>The fail-closed owned context — the polarity AMLService wants.</summary>
+public sealed class FailClosedOwnedDbContext : OwnedTestDbContextBase
+{
+  public FailClosedOwnedDbContext(DbContextOptions options, ICurrentTenantService tenantService)
+      : base(options, tenantService)
+  {
+  }
+
+  protected override TenantFilterMode Mode => TenantFilterMode.FailClosed;
+}
+
+/// <summary>
+/// Mirrors <see cref="TestDbContextBase"/> but wires the ITenantOwned overloads:
+/// <c>ApplyTenantOwnedFilters</c> and <c>StampTenantOwned</c>.
+/// </summary>
+public abstract class OwnedTestDbContextBase : DbContext, ITenantScopedDbContext
+{
+  private readonly ICurrentTenantService _currentTenantService;
+
+  protected OwnedTestDbContextBase(DbContextOptions options, ICurrentTenantService tenantService)
+      : base(options)
+  {
+    _currentTenantService = tenantService;
+  }
+
+  public ICurrentTenantService CurrentTenantService => _currentTenantService;
+
+  public DbSet<Gadget> Gadgets => Set<Gadget>();
+
+  public DbSet<OwnedGlobalSetting> OwnedGlobalSettings => Set<OwnedGlobalSetting>();
+
+  protected abstract TenantFilterMode Mode { get; }
+
+  protected override void OnModelCreating(ModelBuilder modelBuilder)
+  {
+    base.OnModelCreating(modelBuilder);
+
+    modelBuilder.Entity<Gadget>().HasKey(e => e.Id);
+    modelBuilder.Entity<OwnedGlobalSetting>().HasKey(e => e.Id);
+
+    modelBuilder.ApplyTenantOwnedFilters(this, Mode);
+  }
+
+  public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+  {
+    ChangeTracker.StampTenantOwned(_currentTenantService);
+
+    return await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+  }
+}

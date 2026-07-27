@@ -35,15 +35,53 @@ public static class TenantModelBuilderExtensions
       TContext context,
       TenantFilterMode mode)
       where TContext : DbContext, ITenantScopedDbContext
+      => ApplyFiltersCore(modelBuilder, context, mode, typeof(BaseTenantEntity), nameof(SetTenantFilter));
+
+  /// <summary>
+  /// The interface-keyed twin of <see cref="ApplyTenantFilters{TContext}(ModelBuilder, TContext, TenantFilterMode)"/>:
+  /// adds the SAME tenant query filter to every entity type implementing <see cref="ITenantOwned"/>,
+  /// for contexts whose entities carry a raw Guid <c>TenantId</c> without inheriting
+  /// <c>BaseTenantEntity</c> (e.g. PROOViD AMLService).
+  /// </summary>
+  /// <typeparam name="TContext">The DbContext type; must expose the ambient tenant service.</typeparam>
+  /// <param name="modelBuilder">The model builder, from <c>OnModelCreating</c>.</param>
+  /// <param name="context">The context itself — pass <c>this</c>. See the sibling overload's remarks.</param>
+  /// <param name="mode">What happens when there is no ambient tenant. Required — see <see cref="TenantFilterMode"/>.</param>
+  /// <returns>The same <paramref name="modelBuilder"/>, for chaining.</returns>
+  /// <remarks>
+  /// The predicate and both <see cref="TenantFilterMode"/> polarities are identical to the
+  /// <c>BaseTenantEntity</c> path; only the entity selection and the property access differ. The tenant
+  /// column is read through <see cref="EF.Property{TProperty}(object, string)"/> so it translates
+  /// regardless of the concrete entity's declaring type.
+  /// </remarks>
+  public static ModelBuilder ApplyTenantOwnedFilters<TContext>(
+      this ModelBuilder modelBuilder,
+      TContext context,
+      TenantFilterMode mode)
+      where TContext : DbContext, ITenantScopedDbContext
+      => ApplyFiltersCore(modelBuilder, context, mode, typeof(ITenantOwned), nameof(SetTenantOwnedFilter));
+
+  /// <summary>
+  /// Shared driver for both keyed paths: selects the model entity types assignable to
+  /// <paramref name="markerType"/> and invokes the named private per-entity setter for each. Extracted
+  /// so the interface path and the <c>BaseTenantEntity</c> path cannot drift.
+  /// </summary>
+  private static ModelBuilder ApplyFiltersCore<TContext>(
+      ModelBuilder modelBuilder,
+      TContext context,
+      TenantFilterMode mode,
+      Type markerType,
+      string setterName)
+      where TContext : DbContext, ITenantScopedDbContext
   {
     ArgumentNullException.ThrowIfNull(modelBuilder);
     ArgumentNullException.ThrowIfNull(context);
 
     // Entity-type selection is lifted UNCHANGED from the six hand-rolled copies: every model entity
-    // assignable to BaseTenantEntity, with no IsAbstract screen. Adding one here would be a
-    // behaviour change disguised as a tidy-up, so it is deliberately absent.
+    // assignable to the marker (BaseTenantEntity or ITenantOwned), with no IsAbstract screen. Adding
+    // one here would be a behaviour change disguised as a tidy-up, so it is deliberately absent.
     var tenantEntityTypes = modelBuilder.Model.GetEntityTypes()
-        .Where(et => typeof(BaseTenantEntity).IsAssignableFrom(et.ClrType))
+        .Where(et => markerType.IsAssignableFrom(et.ClrType))
         .Select(et => et.ClrType);
 
     foreach (var clrType in tenantEntityTypes)
@@ -52,7 +90,7 @@ public static class TenantModelBuilderExtensions
       // S3011: this accessibility bypass is safe - we are calling our own private method.
 #pragma warning disable S3011
       var method = typeof(TenantModelBuilderExtensions)
-          .GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Static)!
+          .GetMethod(setterName, BindingFlags.NonPublic | BindingFlags.Static)!
           .MakeGenericMethod(clrType, typeof(TContext));
 #pragma warning restore S3011
 
@@ -93,5 +131,41 @@ public static class TenantModelBuilderExtensions
     modelBuilder.Entity<TEntity>().HasQueryFilter(e =>
         context.CurrentTenantService.TenantId == null || // SuperUser or no tenant context - show all
         e.TenantId == context.CurrentTenantService.TenantId);
+  }
+
+  /// <summary>
+  /// The <see cref="ITenantOwned"/> counterpart of <see cref="SetTenantFilter{TEntity, TContext}"/>.
+  /// Identical polarity and identical context-rooted lambda; the only difference is that the tenant
+  /// column is read through <see cref="EF.Property{TProperty}(object, string)"/> rather than a strongly
+  /// typed member.
+  /// </summary>
+  /// <remarks>
+  /// 🔴 The same capture rule applies: both lambdas reference <paramref name="context"/> and read
+  /// <c>.CurrentTenantService.TenantId</c> THROUGH it so EF Core swaps in the executing context per
+  /// query. <see cref="EF.Property{TProperty}(object, string)"/> is used for the entity side because the
+  /// only member the interface guarantees is a getter whose declaring type is the interface, not the
+  /// mapped entity — resolving the column by name sidesteps any interface-member translation concern
+  /// while reading the exact same column as the <c>BaseTenantEntity</c> path.
+  /// </remarks>
+  private static void SetTenantOwnedFilter<TEntity, TContext>(
+      ModelBuilder modelBuilder,
+      TContext context,
+      TenantFilterMode mode)
+      where TEntity : class, ITenantOwned
+      where TContext : DbContext, ITenantScopedDbContext
+  {
+    if (mode == TenantFilterMode.FailClosed)
+    {
+      // `!= null &&`, never `== null ||`. One character between isolation and a leak.
+      modelBuilder.Entity<TEntity>().HasQueryFilter(e =>
+          context.CurrentTenantService.TenantId != null &&
+          EF.Property<Guid>(e, nameof(ITenantOwned.TenantId)) == context.CurrentTenantService.TenantId);
+
+      return;
+    }
+
+    modelBuilder.Entity<TEntity>().HasQueryFilter(e =>
+        context.CurrentTenantService.TenantId == null || // SuperUser or no tenant context - show all
+        EF.Property<Guid>(e, nameof(ITenantOwned.TenantId)) == context.CurrentTenantService.TenantId);
   }
 }
