@@ -1,6 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Override the single TargetFramework inherited from Directory.Build.props: THIS package
+         multi-targets so the net8 straggler (AMLService, net8/EF8) can consume it, while the test
+         project keeps inheriting the single net10 target. Clearing TargetFramework then setting
+         TargetFrameworks is the documented override pattern. -->
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <RootNamespace>MultiTenancy</RootNamespace>
     <PackageId>MultiTenancy.EntityFrameworkCore</PackageId>
     <Description>Multi-tenant data isolation for Entity Framework Core. Provides tenant context services, base tenant entity, and query filtering for SaaS applications.</Description>
@@ -17,11 +23,12 @@
       targets SQLite + SqlServer + Npgsql from one model, so a provider dependency here would leak
       into all three.
 
-      Pinned to 9.0.6, NOT 10.x: every consumer is on EF Core 9.0.6 today (despite net10.0 TFMs), and
-      NuGet resolves to the highest requested version - referencing 10.x here would silently drag six
-      services across an EF major.
+      EF version tracks the TFM: net10 consumers are on EF 9.0.6; the net8 target carries an 8.0.x
+      floor for the one straggler still on net8/EF8 (AMLService), so it never drags an EF major onto
+      a net8 consumer. NuGet resolves to the highest requested version per TFM.
     -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" Condition="'$(TargetFramework)' == 'net10.0'" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" Condition="'$(TargetFramework)' == 'net8.0'" />
   </ItemGroup>
 
   <ItemGroup>
