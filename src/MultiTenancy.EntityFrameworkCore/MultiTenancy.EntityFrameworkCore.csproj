@@ -1,20 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- Override the single TargetFramework inherited from Directory.Build.props: THIS package
-         multi-targets so the net8 straggler (AMLService, net8/EF8) can consume it, while the test
-         project keeps inheriting the single net10 target. Clearing TargetFramework then setting
-         TargetFrameworks is the documented override pattern. -->
-    <TargetFramework></TargetFramework>
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <!-- Single-targets net10.0, inherited from Directory.Build.props. This package used to
+         multi-target net8.0;net10.0 for "the net8 straggler (AMLService, net8/EF8)" - measured
+         2026-08-23, AMLService is net10.0 - and so is every other consumer (AgoraService,
+         ContentService, IchnosService, KefiService, NotificationService, OnlineMenuSaaS,
+         PaymentService, TenantService, zygos) and the P5 scaffolder's generated backend. Zero
+         net8 projects remain. The dead target was not free: DomainCore 1.14.1 and
+         Security.Claims 1.5.1 ship lib/net10.0 ONLY (1.0.1 of each ships lib/net8.0 only), so it
+         PINNED both at 1.0.1 - thirteen and five minors of lag that read as neglect in the drift
+         report. `dotnet restore` with 1.14.1 and this target present fails NU1202; that was
+         observed, not assumed. Do not reintroduce the multi-target without a consumer needing it. -->
     <RootNamespace>MultiTenancy</RootNamespace>
     <PackageId>MultiTenancy.EntityFrameworkCore</PackageId>
     <Description>Multi-tenant data isolation for Entity Framework Core. Provides tenant context services, base tenant entity, and query filtering for SaaS applications.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DomainCore" Version="1.0.1" />
-    <PackageReference Include="Security.Claims" Version="1.0.1" />
+    <PackageReference Include="DomainCore" Version="1.14.1" />
+    <PackageReference Include="Security.Claims" Version="1.5.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,12 +27,9 @@
       targets SQLite + SqlServer + Npgsql from one model, so a provider dependency here would leak
       into all three.
 
-      EF version tracks the TFM: net10 consumers are on EF 9.0.6; the net8 target carries an 8.0.x
-      floor for the one straggler still on net8/EF8 (AMLService), so it never drags an EF major onto
-      a net8 consumer. NuGet resolves to the highest requested version per TFM.
+      The per-TFM conditions went with the net8 target: there is one TFM now, so one EF reference.
     -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" Condition="'$(TargetFramework)' == 'net10.0'" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
   </ItemGroup>
 
   <ItemGroup>
