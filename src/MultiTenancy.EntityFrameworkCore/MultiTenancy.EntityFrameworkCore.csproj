@@ -18,7 +18,8 @@
 
   <ItemGroup>
     <PackageReference Include="DomainCore" Version="1.14.1" />
-    <PackageReference Include="Security.Claims" Version="1.5.1" />
+    <PackageReference Include="Security.Claims" Version="1.7.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.6" />
   </ItemGroup>
 
   <ItemGroup>

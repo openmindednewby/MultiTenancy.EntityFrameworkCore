@@ -1,58 +1,69 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using MultiTenancy.Abstractions;
 using Security.Claims.Claims;
 
 namespace MultiTenancy.Services;
 
-/// <summary>
-/// Implementation of <see cref="ICurrentTenantService"/> that extracts tenant information
-/// from the HTTP context and user claims.
-/// </summary>
+/// <summary>Reads the current tenant, user and super user from the HTTP request claims.</summary>
 public class CurrentTenantService : ICurrentTenantService
 {
-  private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly string _platformRealm;
 
-  /// <summary>
-  /// Initializes a new instance of the <see cref="CurrentTenantService"/> class.
-  /// </summary>
-  /// <param name="httpContextAccessor">The HTTP context accessor to get current user information.</param>
-  public CurrentTenantService(IHttpContextAccessor httpContextAccessor)
-  {
-    _httpContextAccessor = httpContextAccessor;
-  }
-
-  /// <inheritdoc />
-  public Guid? TenantId
-  {
-    get
+    /// <summary>Initializes a new instance with no platform realm, so nobody is a super user.</summary>
+    /// <param name="httpContextAccessor">The HTTP context accessor to get current user information.</param>
+    public CurrentTenantService(IHttpContextAccessor httpContextAccessor)
+        : this(httpContextAccessor, string.Empty)
     {
-      var user = _httpContextAccessor.HttpContext?.User;
-      if (user == null) return null;
-      if (IsSuperUser) return null; // Skip filtering for superUser
-
-      return user.GetTenantId();
     }
-  }
 
-  /// <inheritdoc />
-  public Guid? UserId
-  {
-    get
+    /// <summary>Initializes a new instance whose super user must come from the configured platform realm.</summary>
+    /// <param name="httpContextAccessor">The HTTP context accessor to get current user information.</param>
+    /// <param name="options">The platform realm, bound from <c>Authentication:PlatformRealm</c>.</param>
+    public CurrentTenantService(IHttpContextAccessor httpContextAccessor, IOptions<SuperUserRealmOptions> options)
+        : this(httpContextAccessor, options.Value.PlatformRealm ?? string.Empty)
     {
-      var user = _httpContextAccessor.HttpContext?.User;
-      if (user == null) return null;
-
-      if (IsSuperUser) return null; // Skip filtering for superUser
-
-      var subjectId = user.GetSubjectId();
-      if (Guid.TryParse(subjectId, out var userId))
-        return userId;
-
-      return null;
     }
-  }
 
-  /// <inheritdoc />
-  public bool IsSuperUser =>
-      _httpContextAccessor.HttpContext?.User?.IsSuperUser() ?? false;
+    private CurrentTenantService(IHttpContextAccessor httpContextAccessor, string platformRealm)
+    {
+        _httpContextAccessor = httpContextAccessor;
+        _platformRealm = platformRealm;
+    }
+
+    /// <inheritdoc />
+    public Guid? TenantId
+    {
+        get
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            if (user == null) return null;
+            if (IsSuperUser) return null;
+
+            return user.GetTenantId();
+        }
+    }
+
+    /// <inheritdoc />
+    public Guid? UserId
+    {
+        get
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            if (user == null) return null;
+
+            if (IsSuperUser) return null;
+
+            var subjectId = user.GetSubjectId();
+            if (Guid.TryParse(subjectId, out var userId))
+                return userId;
+
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    public bool IsSuperUser =>
+        _httpContextAccessor.HttpContext?.User?.IsSuperUser(_platformRealm) ?? false;
 }

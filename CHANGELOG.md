@@ -3,6 +3,22 @@
 Entries below start at 2.0.0. Releases 1.0.0 - 1.6.1 predate this file and are not
 reconstructed here; read `git log` for those.
 
+## 2.1.0 - 2026-11-21
+
+### Security - a tenant realm can no longer grant the tenant-filter bypass (SEC-REALM-1)
+
+`CurrentTenantService.IsSuperUser` used the obsolete `IsSuperUser()`, which trusts a `superUser`
+role from ANY realm, so a tenant-realm admin could bypass the tenant filter. It now calls
+`IsSuperUser(platformRealm)` (Security.Claims 1.7.0): the role counts only in a token whose `iss`
+is the platform realm.
+
+- `AddMultiTenancy()` binds `Authentication:PlatformRealm` (the key Identity.Keycloak 1.13.2
+  reads) into the new `SuperUserRealmOptions`.
+- **Unset = nobody is a super user (fail closed).** A consumer that relied on superUser seeing all
+  tenants must set `Authentication:PlatformRealm` to its platform-only realm.
+- The `CurrentTenantService(IHttpContextAccessor)` constructor stays, with no platform realm.
+- Security.Claims 1.5.1 -> 1.7.0; new direct reference Microsoft.Extensions.Configuration.Abstractions 9.0.6.
+
 ## 2.0.0 - 2026-08-23
 
 ### BREAKING — drops the `net8.0` target

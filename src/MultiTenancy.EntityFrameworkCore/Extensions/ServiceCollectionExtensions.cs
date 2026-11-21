@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MultiTenancy.Abstractions;
@@ -11,16 +12,19 @@ namespace MultiTenancy.Extensions;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
-  /// <summary>
-  /// Adds multi-tenancy services to the dependency injection container.
-  /// </summary>
-  /// <param name="services">The service collection.</param>
-  /// <returns>The service collection for chaining.</returns>
-  public static IServiceCollection AddMultiTenancy(this IServiceCollection services)
-  {
-    services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-    services.AddScoped<ICurrentTenantService, CurrentTenantService>();
+    /// <summary>
+    /// Adds multi-tenancy services to the dependency injection container.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddMultiTenancy(this IServiceCollection services)
+    {
+        services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        services.AddOptions<SuperUserRealmOptions>()
+            .Configure<IConfiguration>((options, configuration) =>
+                options.PlatformRealm = configuration[SuperUserRealmOptions.PlatformRealmKey] ?? string.Empty);
+        services.AddScoped<ICurrentTenantService, CurrentTenantService>();
 
-    return services;
-  }
+        return services;
+    }
 }
